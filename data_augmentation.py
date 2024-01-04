@@ -36,10 +36,14 @@ def load_trajectory_data(traj_path):
             frame_data = traj_data.get('frame_data')
             layout_data = traj_data.get('layout_data')
             frame_pos3d = traj_data.get('frame_pos3d')
-            frame_pos3d_color = traj_data.get('frame_pos3d_color')
+            frame_pos3d_color = traj_data.get('frame_pos3d_color')  
             collided_frame_id_list = traj_data.get('collided_frame_id_list')
             spike_estimations = traj_data.get('spike_estimations')
-
+            
+            if collided_frame_id_list is None:
+                print("collided_frame_id_list is None")
+                return
+            
             length_of_frame_data = len(frame_data)
             print(f"The length of frame_data is: {length_of_frame_data}")
             length_of_frame_pos3d = len(frame_pos3d)
@@ -50,7 +54,7 @@ def load_trajectory_data(traj_path):
 
         
 def on_circle_augment(traj_path, output_dir, modefied_ratio): #choose radius ??
-    print(modefied_ratio)
+    
     frame_pos3d, length_of_frame_data, length_of_frame_pos3d, frame_pos3d_color,\
     frame_data, layout_data, collided_frame_id_list, spike_estimations = load_trajectory_data(traj_path)
     
@@ -65,7 +69,7 @@ def on_circle_augment(traj_path, output_dir, modefied_ratio): #choose radius ??
         next_frame_id = str(int(frame_id) + 1)
         if next_frame_id in frame_pos3d:
             radius = 0.1 * math.sqrt(sum((pos3d[i] - frame_pos3d[next_frame_id][i])**2 for i in range(3)))
-            # print(f"radius: {radius}")
+            print(f"radius: {radius}")
         else:
             radius = 0
 
@@ -77,8 +81,8 @@ def on_circle_augment(traj_path, output_dir, modefied_ratio): #choose radius ??
         new_y = pos3d[1] + radius * math.sin(math.radians(degree))
         new_z = pos3d[2] 
 
-
         frame_pos3d[frame_id] = [new_x, new_y, new_z]
+        
     length_of_frame_data = len(frame_data)
     print(f"The length of frame_data is: {length_of_frame_data}")
 
@@ -157,7 +161,7 @@ def in_circle_augment(traj_path, output_dir, modefied_ratio):
 
     draw_plot(ori_pos3d, frame_pos3d)
         
-def point_stretching_augment(traj_path, output_dir,  modefied_ratio, max_distance, method): #wait fix
+def point_stretching_augment(traj_path, output_dir,  modefied_ratio, max_distance, method): 
     frame_pos3d, length_of_frame_data, length_of_frame_pos3d, frame_pos3d_color,\
     frame_data, layout_data, collided_frame_id_list, spike_estimations = load_trajectory_data(traj_path)
 
@@ -257,6 +261,15 @@ def point_dropping_augment(traj_path, output_dir,  modefied_ratio):
 
     draw_plot(ori_pos3d, frame_pos3d)
         
+def check_max_distance(value):
+    float_value = float(value)
+    min = 0.01
+    max = 0.025
+
+    if not (min<= float_value <= max):
+        raise argparse.ArgumentTypeError(f"{value} must be a float between {min} and {max}")
+
+    return float_value
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Trajectory Data Augmentation Script")
@@ -276,8 +289,12 @@ def parse_arguments():
     # Process paths separately, and append them to args
     args.paths = paths
 
+    if args.mode == "on" or args.mode == "in":
+        parser.add_argument("--radius", type=float, help="Radius for on-circle and in-circle augmentation", required=True)
+        args = parser.parse_args()
+        
     if args.mode == "ps":
-        parser.add_argument("--max_distance", type=float, help="Maximum distance for point stretching", required=True)
+        parser.add_argument("--max_distance", type=check_max_distance, help="Maximum distance for point stretching 0.1 ~ 0.025", required=True)
         parser.add_argument("--method", help="Method for selecting the new point", choices=["min", "max", "random", "between"], required=True)
 
         # Parse the arguments again with the updated parser
@@ -287,11 +304,13 @@ def parse_arguments():
 
 if __name__ == "__main__":
     args = parse_arguments()
+    if not os.path.exists(args.output):
+        os.makedirs(args.output)
     
     if args.mode == "on":
         on_circle_augment(args.input, args.output,args.modified_ratio)
     elif args.mode == "in":
-        in_circle_augment(args.input, args.output)
+        in_circle_augment(args.input, args.output, args.modified_ratio)
     elif args.mode == "ps":
         point_stretching_augment(args.input, args.output, args.modified_ratio, args.max_distance, args.method)
     elif args.mode == "pd":
