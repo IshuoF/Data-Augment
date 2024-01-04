@@ -10,11 +10,11 @@
 ---
 ### On circle mode
 
-#### ``` python .\data_augmentation.py --input "./data/trajectory/xxx.json" --output "./data/trajectory/xxx" --mode "On" --modified_ratio 0.5 ```
+#### ``` python .\data_augmentation.py --input "./data/trajectory/xxx.json" --output "./data/trajectory/xxx" --mode "On" --modified_ratio 0.5 --radius_ratio 0.1 ```
 ---
 ### In circle mode
 
-#### ``` python .\data_augmentation.py --input "./data/trajectory/xxx.json" --output "./data/trajectory/xxx" --mode "In" --modified_ratio 0.5 ```
+#### ``` python .\data_augmentation.py --input "./data/trajectory/xxx.json" --output "./data/trajectory/xxx" --mode "In" --modified_ratio 0.5  --radius_ratio 0.1```
 
 ---
 ### Point Stretching mode
@@ -23,6 +23,6 @@
 ---
 ### Point Dropping mode
 
-#### ``` python .\data_augmentation.py --input "./data/trajectory/xxx.json" --output "./data/trajectory/xxx" --mode "pd" --droping rate 0.5 ```
+#### ``` python .\data_augmentation.py --input "./data/trajectory/xxx.json" --output "./data/trajectory/xxx" --mode "pd" --modified_ratio 0.5 ```
 
 
