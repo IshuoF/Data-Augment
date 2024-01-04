@@ -53,7 +53,7 @@ def load_trajectory_data(traj_path):
                frame_data, layout_data, collided_frame_id_list, spike_estimations
 
         
-def on_circle_augment(traj_path, output_dir, modefied_ratio): #choose radius ??
+def on_circle_augment(traj_path, output_dir, modefied_ratio,radius_ratio): 
     
     frame_pos3d, length_of_frame_data, length_of_frame_pos3d, frame_pos3d_color,\
     frame_data, layout_data, collided_frame_id_list, spike_estimations = load_trajectory_data(traj_path)
@@ -68,8 +68,8 @@ def on_circle_augment(traj_path, output_dir, modefied_ratio): #choose radius ??
         # Calculate the radius as 10% of the distance between the current point and the next point
         next_frame_id = str(int(frame_id) + 1)
         if next_frame_id in frame_pos3d:
-            radius = 0.1 * math.sqrt(sum((pos3d[i] - frame_pos3d[next_frame_id][i])**2 for i in range(3)))
-            print(f"radius: {radius}")
+            radius = radius_ratio * math.sqrt(sum((pos3d[i] - frame_pos3d[next_frame_id][i])**2 for i in range(3)))
+            # print(f"radius: {radius}")
         else:
             radius = 0
 
@@ -107,7 +107,7 @@ def on_circle_augment(traj_path, output_dir, modefied_ratio): #choose radius ??
 
     draw_plot(ori_pos3d, frame_pos3d)
         
-def in_circle_augment(traj_path, output_dir, modefied_ratio):
+def in_circle_augment(traj_path, output_dir, modefied_ratio,radius_ratio):
     frame_pos3d, length_of_frame_data, length_of_frame_pos3d, frame_pos3d_color,\
     frame_data, layout_data, collided_frame_id_list, spike_estimations = load_trajectory_data(traj_path)
 
@@ -121,7 +121,7 @@ def in_circle_augment(traj_path, output_dir, modefied_ratio):
         # Randomly select a distance in a circular region around the current point
         next_frame_id = str(int(frame_id) + 1)
         if next_frame_id in frame_pos3d:
-            distance_limit = 0.1 * math.sqrt(sum((pos3d[i] - frame_pos3d[next_frame_id][i])**2 for i in range(3)))
+            distance_limit = radius_ratio * math.sqrt(sum((pos3d[i] - frame_pos3d[next_frame_id][i])**2 for i in range(3)))
 
             # Randomly select a distance smaller than the distance between the current point and the next
             distance = random.uniform(0, distance_limit)
@@ -263,8 +263,28 @@ def point_dropping_augment(traj_path, output_dir,  modefied_ratio):
         
 def check_max_distance(value):
     float_value = float(value)
-    min = 0.01
-    max = 0.025
+    min = 0.03
+    max = 0.1
+
+    if not (min<= float_value <= max):
+        raise argparse.ArgumentTypeError(f"{value} must be a float between {min} and {max}")
+
+    return float_value
+
+def check_modefied_ratio(value):
+    float_value = float(value)
+    min = 0.1
+    max = 1
+
+    if not (min<= float_value <= max):
+        raise argparse.ArgumentTypeError(f"{value} must be a float between {min} and {max}")
+
+    return float_value
+
+def check_radius_ratio(value):
+    float_value = float(value)
+    min = 0.1
+    max = 0.4
 
     if not (min<= float_value <= max):
         raise argparse.ArgumentTypeError(f"{value} must be a float between {min} and {max}")
@@ -282,7 +302,7 @@ def parse_arguments():
     parser.add_argument("--mode", help="Augmentation mode ", choices=["on", "in", "ps", "pd"], required=True)
 
     # Common argument for all modes
-    parser.add_argument("--modified_ratio", type=float, help="Ratio of trajectories to be modified", required=True)
+    parser.add_argument("--modified_ratio", type=check_modefied_ratio, help="Ratio of trajectories to be modified 0.1 ~ 1", required=True)
 
     args, paths = parser.parse_known_args()
 
@@ -290,11 +310,11 @@ def parse_arguments():
     args.paths = paths
 
     if args.mode == "on" or args.mode == "in":
-        parser.add_argument("--radius", type=float, help="Radius for on-circle and in-circle augmentation", required=True)
+        parser.add_argument("--radius_ratio", type=float, help="Radius ratio is a percentage of the current point to next point distance, with a default of 10% and a maximum of 40%. please select from 0.1 to 0.4", required=True,default=0.1)
         args = parser.parse_args()
         
     if args.mode == "ps":
-        parser.add_argument("--max_distance", type=check_max_distance, help="Maximum distance for point stretching 0.1 ~ 0.025", required=True)
+        parser.add_argument("--max_distance", type=check_max_distance, help="Maximum distance for point stretching 0.03 ~ 0.1", required=True)
         parser.add_argument("--method", help="Method for selecting the new point", choices=["min", "max", "random", "between"], required=True)
 
         # Parse the arguments again with the updated parser
@@ -308,9 +328,9 @@ if __name__ == "__main__":
         os.makedirs(args.output)
     
     if args.mode == "on":
-        on_circle_augment(args.input, args.output,args.modified_ratio)
+        on_circle_augment(args.input, args.output,args.modified_ratio,args.radius_ratio)
     elif args.mode == "in":
-        in_circle_augment(args.input, args.output, args.modified_ratio)
+        in_circle_augment(args.input, args.output, args.modified_ratio,args.radius_ratio)
     elif args.mode == "ps":
         point_stretching_augment(args.input, args.output, args.modified_ratio, args.max_distance, args.method)
     elif args.mode == "pd":
